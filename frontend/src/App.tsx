@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router';
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
+
+const TransactionsPage = lazy(() => import('./transactions/TransactionsPage'));
 const WorkspaceLayout = lazy(() => import('./WorkspaceLayout'));
 
 function SectionPage({
@@ -85,16 +87,7 @@ export default function App() {
           index
           element={<SectionPage title="Дашборд" description="Обзор бюджета за выбранный период." />}
         />
-        <Route
-          path="transactions"
-          element={
-            <SectionPage
-              title="Операции"
-              description="История доходов и расходов."
-              action={{ to: '/transactions/import', label: 'Импортировать выписку' }}
-            />
-          }
-        />
+        <Route path="transactions" element={<TransactionsPage />} />
         <Route
           path="transactions/import"
           element={
