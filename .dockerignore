@@ -1,0 +1,10 @@
+# Frontend build context
+**
+!package.json
+!package-lock.json
+!frontend/
+!frontend/**
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.env*
