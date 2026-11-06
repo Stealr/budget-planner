@@ -1,35 +1,145 @@
-const plannedFeatures = [
-  {
-    title: 'Учёт операций',
-    description: 'Доходы и расходы с карт и наличных в одном месте.',
-  },
-  {
-    title: 'Лимиты',
-    description: 'Планирование трат по категориям на месяц.',
-  },
-  {
-    title: 'Обзор бюджета',
-    description: 'Баланс и сводка расходов за выбранный период.',
-  },
-];
+import { lazy, Suspense } from 'react';
+import { Link, Route, Routes } from 'react-router';
+import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
+const WorkspaceLayout = lazy(() => import('./WorkspaceLayout'));
+
+function SectionPage({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description: string;
+  action?: { to: string; label: string };
+}) {
+  return (
+    <Stack spacing={3} sx={{ maxWidth: 960, mx: 'auto' }}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
+        sx={{ alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between' }}
+      >
+        <Typography component="h1" variant="h1">
+          {title}
+        </Typography>
+        {action && (
+          <Button component={Link} to={action.to} variant="contained">
+            {action.label}
+          </Button>
+        )}
+      </Stack>
+      <Card>
+        <CardContent>
+          <Typography color="text.secondary">{description}</Typography>
+        </CardContent>
+      </Card>
+    </Stack>
+  );
+}
+
+function AccountPage({ registration = false }: { registration?: boolean }) {
+  return (
+    <Box component="main" sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', p: 2 }}>
+      <Card sx={{ width: '100%', maxWidth: 420 }}>
+        <CardContent>
+          <Stack spacing={2}>
+            <Typography variant="overline" color="primary.main">
+              СтудБюджет
+            </Typography>
+            <Typography component="h1" variant="h1">
+              {registration ? 'Создать аккаунт' : 'Вход'}
+            </Typography>
+            <Typography color="text.secondary">Экран будет подключён к API аккаунта.</Typography>
+            <Button component={Link} to={registration ? '/login' : '/register'} variant="outlined">
+              {registration ? 'Перейти ко входу' : 'Зарегистрироваться'}
+            </Button>
+            <Button component={Link} to="/">
+              К дашборду
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+}
 
 export default function App() {
   return (
-    <main className="page">
-      <div className="content">
-        <p className="eyebrow">Учебный проект · НИТУ МИСИС</p>
-        <h1>СтудБюджет</h1>
-        <p className="lead">Планируй расходы и держи свои деньги под контролем.</p>
-        <p className="status">Это стартовый экран. Возможности ниже пока запланированы.</p>
-        <section className="features" aria-label="Запланированные возможности">
-          {plannedFeatures.map((feature) => (
-            <article className="feature" key={feature.title}>
-              <h2>{feature.title}</h2>
-              <p>{feature.description}</p>
-            </article>
-          ))}
-        </section>
-      </div>
-    </main>
+    <Routes>
+      <Route path="/login" element={<AccountPage />} />
+      <Route path="/register" element={<AccountPage registration />} />
+      <Route
+        element={
+          <Suspense
+            fallback={
+              <Box role="status" sx={{ p: 2 }}>
+                Загрузка…
+              </Box>
+            }
+          >
+            <WorkspaceLayout />
+          </Suspense>
+        }
+      >
+        <Route
+          index
+          element={<SectionPage title="Дашборд" description="Обзор бюджета за выбранный период." />}
+        />
+        <Route
+          path="transactions"
+          element={
+            <SectionPage
+              title="Операции"
+              description="История доходов и расходов."
+              action={{ to: '/transactions/import', label: 'Импортировать выписку' }}
+            />
+          }
+        />
+        <Route
+          path="transactions/import"
+          element={
+            <SectionPage
+              title="Импорт выписки"
+              description="Загрузка файла, проверка операций и подтверждение импорта."
+              action={{ to: '/transactions', label: 'К операциям' }}
+            />
+          }
+        />
+        <Route
+          path="categories"
+          element={
+            <SectionPage
+              title="Категории"
+              description="Стандартные и собственные категории операций."
+            />
+          }
+        />
+        <Route
+          path="limits"
+          element={
+            <SectionPage title="Лимиты" description="Расходы по категориям за текущий месяц." />
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <SectionPage
+              title="Настройки аккаунта"
+              description="Управление аккаунтом и его данными."
+            />
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <SectionPage
+              title="Страница не найдена"
+              description="Проверьте адрес или вернитесь к обзору бюджета."
+              action={{ to: '/', label: 'К дашборду' }}
+            />
+          }
+        />
+      </Route>
+    </Routes>
   );
 }
