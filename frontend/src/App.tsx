@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router';
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
 
+const CategoriesPage = lazy(() => import('./categories/CategoriesPage'));
 const TransactionsPage = lazy(() => import('./transactions/TransactionsPage'));
 const WorkspaceLayout = lazy(() => import('./WorkspaceLayout'));
 
@@ -98,15 +99,7 @@ export default function App() {
             />
           }
         />
-        <Route
-          path="categories"
-          element={
-            <SectionPage
-              title="Категории"
-              description="Стандартные и собственные категории операций."
-            />
-          }
-        />
+        <Route path="categories" element={<CategoriesPage />} />
         <Route
           path="limits"
           element={
