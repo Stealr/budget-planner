@@ -27,11 +27,8 @@ import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import dayjs from 'dayjs';
-import {
-  useCreateTransactionMutation,
-  useGetCategoriesQuery,
-  useGetTransactionsQuery,
-} from './api';
+import { useCreateTransactionMutation, useGetTransactionsQuery } from './api';
+import { useGetCategoriesQuery } from '../categories/api';
 
 const expenseSchema = z.object({
   amount: z

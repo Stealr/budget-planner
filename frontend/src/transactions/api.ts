@@ -1,16 +1,10 @@
 import { api } from '../store/api';
 
-export type TransactionType = 'INCOME' | 'EXPENSE';
-
-type Category = {
-  id: number;
-  name: string;
-  type: TransactionType;
-};
+import type { CategoryType } from '../categories/api';
 
 type TransactionInput = {
   amount: number;
-  type: TransactionType;
+  type: CategoryType;
   categoryId: number;
   description: string;
   transactionDate: string;
@@ -23,10 +17,6 @@ type Transaction = Omit<TransactionInput, 'description'> & {
 
 const transactionsApi = api.injectEndpoints({
   endpoints: (build) => ({
-    getCategories: build.query<Category[], void>({
-      query: () => 'v1/categories',
-      providesTags: ['Categories'],
-    }),
     getTransactions: build.query<{ content: Transaction[]; totalElements: number }, number>({
       query: (page) => ({ url: 'v1/transactions', params: { page, size: 20, sort: 'id,desc' } }),
       providesTags: ['Transactions'],
@@ -38,5 +28,4 @@ const transactionsApi = api.injectEndpoints({
   }),
 });
 
-export const { useGetCategoriesQuery, useGetTransactionsQuery, useCreateTransactionMutation } =
-  transactionsApi;
+export const { useGetTransactionsQuery, useCreateTransactionMutation } = transactionsApi;
