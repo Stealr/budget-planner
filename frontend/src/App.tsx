@@ -1,6 +1,7 @@
+import { lazy, Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router';
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
-import { WorkspaceLayout } from './WorkspaceLayout';
+const WorkspaceLayout = lazy(() => import('./WorkspaceLayout'));
 
 function SectionPage({
   title,
@@ -67,7 +68,19 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<AccountPage />} />
       <Route path="/register" element={<AccountPage registration />} />
-      <Route element={<WorkspaceLayout />}>
+      <Route
+        element={
+          <Suspense
+            fallback={
+              <Box role="status" sx={{ p: 2 }}>
+                Загрузка…
+              </Box>
+            }
+          >
+            <WorkspaceLayout />
+          </Suspense>
+        }
+      >
         <Route
           index
           element={<SectionPage title="Дашборд" description="Обзор бюджета за выбранный период." />}

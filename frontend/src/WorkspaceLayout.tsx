@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
 import MenuIcon from '@mui/icons-material/Menu';
 import {
@@ -14,6 +13,8 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
+import { useAppDispatch, useAppSelector } from './store/hooks';
+import { closeMobileMenu, openMobileMenu } from './store/navigationSlice';
 
 const sections = [
   { path: '/', label: 'Дашборд' },
@@ -54,9 +55,10 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function WorkspaceLayout() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const closeMenu = () => setMenuOpen(false);
+export default function WorkspaceLayout() {
+  const menuOpen = useAppSelector((state) => state.navigation.mobileMenuOpen);
+  const dispatch = useAppDispatch();
+  const closeMenu = () => dispatch(closeMobileMenu());
 
   return (
     <Stack sx={{ minHeight: '100dvh' }}>
@@ -81,7 +83,7 @@ export function WorkspaceLayout() {
           <IconButton
             aria-label="Открыть меню"
             aria-expanded={menuOpen}
-            onClick={() => setMenuOpen(true)}
+            onClick={() => dispatch(openMobileMenu())}
             sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
           >
             <MenuIcon />
