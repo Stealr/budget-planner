@@ -18,6 +18,9 @@ public class Transaction {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Long id;
 
+	@Column(name = "owner_id", updatable = false)
+	private Long ownerId;
+
 	@Column(nullable = false, precision = 19, scale = 2)
 	private BigDecimal amount;
 

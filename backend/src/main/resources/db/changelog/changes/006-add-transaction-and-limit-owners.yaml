@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-add-transaction-and-limit-owners
+      author: budget-planner
+      changes:
+        - addColumn:
+            tableName: transactions
+            columns:
+              - column:
+                  name: owner_id
+                  type: BIGINT
+        - addColumn:
+            tableName: monthly_limits
+            columns:
+              - column:
+                  name: owner_id
+                  type: BIGINT
+        - update:
+            tableName: transactions
+            columns:
+              - column:
+                  name: owner_id
+                  valueComputed: (SELECT c.owner_id FROM categories c WHERE c.id = transactions.category_id)
+        - update:
+            tableName: monthly_limits
+            columns:
+              - column:
+                  name: owner_id
+                  valueComputed: (SELECT c.owner_id FROM categories c WHERE c.id = monthly_limits.category_id)
+        - addForeignKeyConstraint:
+            baseTableName: transactions
+            baseColumnNames: owner_id
+            referencedTableName: user_accounts
+            referencedColumnNames: id
+            constraintName: fk_transactions_owner
+        - addForeignKeyConstraint:
+            baseTableName: monthly_limits
+            baseColumnNames: owner_id
+            referencedTableName: user_accounts
+            referencedColumnNames: id
+            constraintName: fk_monthly_limits_owner
+        - dropUniqueConstraint:
+            tableName: monthly_limits
+            constraintName: uq_monthly_limits_category_month
+        - addUniqueConstraint:
+            tableName: monthly_limits
+            columnNames: category_id, owner_id, month_start
+            constraintName: uq_monthly_limits_category_owner_month
+        - createIndex:
+            tableName: monthly_limits
+            indexName: idx_monthly_limits_owner_month
+            columns:
+              - column:
+                  name: owner_id
+              - column:
+                  name: month_start
+        - createIndex:
+            tableName: transactions
+            indexName: idx_transactions_owner_category_date
+            columns:
+              - column:
+                  name: owner_id
+              - column:
+                  name: category_id
+              - column:
+                  name: transaction_date

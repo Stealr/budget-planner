@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-monthly-limits
+      author: budget-planner
+      changes:
+        - createTable:
+            tableName: monthly_limits
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: category_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: month_start
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: NUMERIC(19,2)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: monthly_limits
+            baseColumnNames: category_id
+            referencedTableName: categories
+            referencedColumnNames: id
+            constraintName: fk_monthly_limits_category
+            onDelete: RESTRICT
+        - addUniqueConstraint:
+            tableName: monthly_limits
+            columnNames: category_id, month_start
+            constraintName: uq_monthly_limits_category_month
+        - createIndex:
+            tableName: monthly_limits
+            indexName: idx_monthly_limits_month
+            columns:
+              - column:
+                  name: month_start
+        - createIndex:
+            tableName: transactions
+            indexName: idx_transactions_category_date
+            columns:
+              - column:
+                  name: category_id
+              - column:
+                  name: transaction_date

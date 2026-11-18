@@ -33,7 +33,8 @@ public class GlobalExceptionHandler {
 		return error(HttpStatus.CONFLICT, exception.getMessage(), request);
 	}
 
-	@ExceptionHandler({MethodArgumentNotValidException.class,MethodArgumentTypeMismatchException.class,HttpMessageNotReadableException.class})
+	@ExceptionHandler({MethodArgumentNotValidException.class, MethodArgumentTypeMismatchException.class,
+			HttpMessageNotReadableException.class, MissingServletRequestParameterException.class})
 	public ResponseEntity<ErrorResponse> invalid(Exception exception, HttpServletRequest request) {
 		String message = "Invalid request";
 
