@@ -5,6 +5,7 @@ import com.budgetplanner.category.entity.CategoryType;
 import com.budgetplanner.category.repository.CategoryRepository;
 import com.budgetplanner.common.exception.BusinessConflictException;
 import com.budgetplanner.common.exception.ResourceNotFoundException;
+import com.budgetplanner.limit.service.LimitWarningService;
 import com.budgetplanner.transaction.dto.TransactionRequest;
 import com.budgetplanner.transaction.dto.TransactionResponse;
 import com.budgetplanner.transaction.entity.Transaction;
@@ -24,6 +25,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionMapper transactionMapper;
+    private final LimitWarningService limitWarnings;
 
     @Transactional
     public TransactionResponse create(Long ownerId, TransactionRequest request) {
@@ -32,7 +34,12 @@ public class TransactionService {
         transaction.setOwnerId(ownerId);
 
         transactionMapper.update(transaction, request, category);
-        return transactionMapper.toResponse(transactionRepository.save(transaction));
+        Transaction saved = transactionRepository.save(transaction);
+        if (saved.getType() != CategoryType.EXPENSE) {
+            return transactionMapper.toResponse(saved);
+        }
+        var warning = limitWarnings.afterExpense(ownerId, category.getId(), saved.getTransactionDate());
+        return transactionMapper.toResponse(saved, warning.orElse(null));
     }
 
     @Transactional(readOnly = true)

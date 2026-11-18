@@ -27,8 +27,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             where t.ownerId = :ownerId
               and (:type is null or t.type = :type)
               and (:categoryId is null or t.category.id = :categoryId)
-              and (:dateFrom is null or t.transactionDate >= :dateFrom)
-              and (:dateTo is null or t.transactionDate <= :dateTo)
+              and (cast(:dateFrom as LocalDate) is null or t.transactionDate >= :dateFrom)
+              and (cast(:dateTo as LocalDate) is null or t.transactionDate <= :dateTo)
             """)
     Page<Transaction> findFiltered(@Param("ownerId") Long ownerId,
                                    @Param("type") CategoryType type,

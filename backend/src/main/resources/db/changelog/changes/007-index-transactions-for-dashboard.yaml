@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-index-transactions-for-dashboard
+      author: budget-planner
+      changes:
+        - createIndex:
+            tableName: transactions
+            indexName: idx_transactions_owner_date
+            columns:
+              - column:
+                  name: owner_id
+              - column:
+                  name: transaction_date
