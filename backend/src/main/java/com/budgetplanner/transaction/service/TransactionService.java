@@ -22,8 +22,8 @@ public class TransactionService {
 	private final TransactionMapper transactionMapper;
 
 	@Transactional
-	public TransactionResponse create(TransactionRequest request) {
-		Category category = validatedCategory(request);
+	public TransactionResponse create(Long ownerId, TransactionRequest request) {
+		Category category = validatedCategory(ownerId, request);
 		Transaction transaction = new Transaction();
 
 		transactionMapper.update(transaction, request, category);
@@ -31,23 +31,23 @@ public class TransactionService {
 	}
 
 	@Transactional(readOnly = true)
-	public TransactionResponse get(Long id) {
-		return transactionMapper.toResponse(find(id));
+	public TransactionResponse get(Long ownerId, Long id) {
+		return transactionMapper.toResponse(find(ownerId, id));
 	}
 
 	@Transactional(readOnly = true)
-	public Page<TransactionResponse> list(CategoryType type, Long categoryId, LocalDate from, LocalDate to, Pageable pageable) {
+	public Page<TransactionResponse> list(Long ownerId, CategoryType type, Long categoryId, LocalDate from, LocalDate to, Pageable pageable) {
 		if (from != null && to != null && from.isAfter(to)) {
 			throw new IllegalArgumentException("dateFrom must not be after dateTo");
 		}
 
-		return transactionRepository.findFiltered(type, categoryId, from, to, pageable).map(transactionMapper::toResponse);
+		return transactionRepository.findFiltered(ownerId, type, categoryId, from, to, pageable).map(transactionMapper::toResponse);
 	}
 
 	@Transactional
-	public TransactionResponse update(Long id ,TransactionRequest request) {
-		Transaction transaction = find(id);
-		Category category = validatedCategory(request);
+	public TransactionResponse update(Long ownerId, Long id, TransactionRequest request) {
+		Transaction transaction = find(ownerId, id);
+		Category category = validatedCategory(ownerId, request);
 
 		transactionMapper.update(transaction, request, category);
 
@@ -55,23 +55,23 @@ public class TransactionService {
 	}
 
 	@Transactional
-	public void delete(Long id) {
-		Transaction transaction = find(id);
+	public void delete(Long ownerId, Long id) {
+		Transaction transaction = find(ownerId, id);
 		transactionRepository.delete(transaction);
 	}
 
-	private Transaction find(Long id) {
-		return transactionRepository.findById(id)
+	private Transaction find(Long ownerId, Long id) {
+		return transactionRepository.findByIdAndCategoryOwnerId(id, ownerId)
 				.orElseThrow(() -> new ResourceNotFoundException("Transaction not found: " + id));
 	}
 
-	private Category validatedCategory(TransactionRequest request) {
+	private Category validatedCategory(Long ownerId, TransactionRequest request) {
 		if (request.amount() == null || request.amount().signum() <= 0 ||
 				request.amount().scale() > 2 || request.amount().precision() - request.amount().scale() > 17) {
 			throw new IllegalArgumentException("Invalid transaction amount");
 		}
 
-		Category category = categoryRepository.findById(request.categoryId())
+		Category category = categoryRepository.findByIdAndOwnerId(request.categoryId(), ownerId)
 				.orElseThrow(() -> new ResourceNotFoundException("Category not found: " + request.categoryId()));
 
 		if(category.getType() != request.type()) {
