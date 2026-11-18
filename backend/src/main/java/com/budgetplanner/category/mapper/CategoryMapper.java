@@ -11,7 +11,9 @@ public class CategoryMapper {
 				category.getId(),
 				category.getName(),
 				category.getType(),
-				category.getCreatedAt()
+				category.getCreatedAt(),
+				category.isStandard(),
+				category.getArchivedAt()
 		);
 	}
 

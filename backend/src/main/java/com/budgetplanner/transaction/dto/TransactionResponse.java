@@ -11,5 +11,6 @@ public record TransactionResponse(
 		Long categoryId,
 		String description,
 		LocalDate transactionDate,
-		Instant createdAt
+		Instant createdAt,
+		String categoryName
 ) {}

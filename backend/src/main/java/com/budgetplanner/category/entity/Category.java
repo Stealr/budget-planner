@@ -1,6 +1,7 @@
 package com.budgetplanner.category.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,8 +27,26 @@ public class Category {
 	@Column(nullable = false, length = 20)
 	private CategoryType type;
 
+	@Setter(AccessLevel.NONE)
+	@Column(name = "standard_code", length = 32, updatable = false)
+	private String standardCode;
+
+	@Setter(AccessLevel.NONE)
+	@Column(name = "archived_at")
+	private Instant archivedAt;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
+
+	public boolean isStandard() {
+		return standardCode != null;
+	}
+
+	public void archive(Instant archivedAt) {
+		if (this.archivedAt == null) {
+			this.archivedAt = archivedAt;
+		}
+	}
 
 	@PrePersist
 	void onCreate() {

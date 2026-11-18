@@ -1,0 +1,137 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-add-category-catalog-and-archive
+      author: budget-planner
+      changes:
+        - addColumn:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  type: VARCHAR(32)
+                  constraints:
+                    unique: true
+                    uniqueConstraintName: uq_categories_standard_code
+              - column:
+                  name: archived_at
+                  type: TIMESTAMP WITH TIME ZONE
+        - insert:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  value: FOOD
+              - column:
+                  name: name
+                  value: Еда
+              - column:
+                  name: type
+                  value: EXPENSE
+        - insert:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  value: TRANSPORT
+              - column:
+                  name: name
+                  value: Транспорт
+              - column:
+                  name: type
+                  value: EXPENSE
+        - insert:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  value: HOUSING
+              - column:
+                  name: name
+                  value: Жильё
+              - column:
+                  name: type
+                  value: EXPENSE
+        - insert:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  value: COMMUNICATION
+              - column:
+                  name: name
+                  value: Связь
+              - column:
+                  name: type
+                  value: EXPENSE
+        - insert:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  value: ENTERTAINMENT
+              - column:
+                  name: name
+                  value: Развлечения
+              - column:
+                  name: type
+                  value: EXPENSE
+        - insert:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  value: EDUCATION
+              - column:
+                  name: name
+                  value: Учёба
+              - column:
+                  name: type
+                  value: EXPENSE
+        - insert:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  value: CLOTHING
+              - column:
+                  name: name
+                  value: Одежда
+              - column:
+                  name: type
+                  value: EXPENSE
+        - insert:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  value: SUBSCRIPTIONS
+              - column:
+                  name: name
+                  value: Подписки
+              - column:
+                  name: type
+                  value: EXPENSE
+        - insert:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  value: OTHER_EXPENSE
+              - column:
+                  name: name
+                  value: Другое
+              - column:
+                  name: type
+                  value: EXPENSE
+        - insert:
+            tableName: categories
+            columns:
+              - column:
+                  name: standard_code
+                  value: SCHOLARSHIP
+              - column:
+                  name: name
+                  value: Стипендия
+              - column:
+                  name: type
+                  value: INCOME

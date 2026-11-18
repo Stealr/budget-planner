@@ -5,3 +5,9 @@ databaseChangeLog:
       file: db/changelog/changes/002-create-transactions.yaml
   - include:
       file: db/changelog/changes/003-add-accounts.yaml
+  - include:
+      file: db/changelog/changes/004-add-category-catalog-and-archive.yaml
+  - include:
+      file: db/changelog/changes/005-create-monthly-limits.yaml
+  - include:
+      file: db/changelog/changes/006-add-transaction-and-limit-owners.yaml

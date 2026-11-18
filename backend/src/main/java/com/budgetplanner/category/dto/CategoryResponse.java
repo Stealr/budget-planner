@@ -7,5 +7,7 @@ public record CategoryResponse(
         Long id,
         String name,
         CategoryType type,
-        Instant createdAt
+        Instant createdAt,
+        boolean standard,
+        Instant archivedAt
 ) {}
