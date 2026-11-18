@@ -19,28 +19,29 @@ public class CategoryService {
 	private final TransactionRepository transactionRepository;
 
 	@Transactional
-	public CategoryResponse create(CategoryRequest request) {
+	public CategoryResponse create(Long ownerId, CategoryRequest request) {
 		Category category = new Category();
+		category.setOwnerId(ownerId);
 		categoryMapper.update(category, request);
 		return categoryMapper.toResponse(categoryRepository.save(category));
 	}
 
 	@Transactional(readOnly=true)
-	public List<CategoryResponse> list() {
-		return categoryRepository.findAll()
+	public List<CategoryResponse> list(Long ownerId) {
+		return categoryRepository.findAllByOwnerId(ownerId)
 				.stream()
 				.map(categoryMapper::toResponse)
 				.toList();
 	}
 
 	@Transactional(readOnly=true)
-	public CategoryResponse get(Long id) {
-		return categoryMapper.toResponse(findCategory(id));
+	public CategoryResponse get(Long ownerId, Long id) {
+		return categoryMapper.toResponse(findCategory(ownerId, id));
 	}
 
 	@Transactional
-	public CategoryResponse update(Long id,CategoryRequest request) {
-		Category category = findCategory(id);
+	public CategoryResponse update(Long ownerId, Long id, CategoryRequest request) {
+		Category category = findCategory(ownerId, id);
 
 		if (transactionRepository.existsByCategoryId(id) && category.getType() != request.type()) {
 			throw new BusinessConflictException("Cannot change type of a category with transactions");
@@ -51,8 +52,8 @@ public class CategoryService {
 	}
 
 	@Transactional
-	public void delete(Long id) {
-		Category category = findCategory(id);
+	public void delete(Long ownerId, Long id) {
+		Category category = findCategory(ownerId, id);
 
 		if (transactionRepository.existsByCategoryId(id)) {
 			throw new BusinessConflictException("Category is used by transactions");
@@ -62,7 +63,7 @@ public class CategoryService {
 		categoryRepository.flush();
 	}
 
-	private Category findCategory(Long id) {
-		return categoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category not found: " +  id));
+	private Category findCategory(Long ownerId, Long id) {
+		return categoryRepository.findByIdAndOwnerId(id, ownerId).orElseThrow(() -> new ResourceNotFoundException("Category not found: " +  id));
 	}
 }

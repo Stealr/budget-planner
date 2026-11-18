@@ -1,0 +1,91 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-add-accounts
+      author: budget-planner
+      # Preserve the identity of the previously applied formatted SQL change set.
+      logicalFilePath: db/changelog/changes/003-add-accounts.sql
+      validCheckSum: 9:fe5aba3120782c888194cdb527c4ff5f
+      changes:
+        - createTable:
+            tableName: user_accounts
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  generationType: BY DEFAULT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(254)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: user_accounts_email_key
+              - column:
+                  name: password_hash
+                  type: VARCHAR(60)
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: user_access_tokens
+            columns:
+              - column:
+                  name: token_hash
+                  type: CHAR(64)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: user_access_tokens
+            baseColumnNames: user_id
+            referencedTableName: user_accounts
+            referencedColumnNames: id
+            constraintName: user_access_tokens_user_id_fkey
+            onDelete: CASCADE
+        - createIndex:
+            tableName: user_access_tokens
+            indexName: idx_user_access_tokens_user
+            columns:
+              - column:
+                  name: user_id
+        - addColumn:
+            tableName: categories
+            columns:
+              - column:
+                  name: owner_id
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            baseTableName: categories
+            baseColumnNames: owner_id
+            referencedTableName: user_accounts
+            referencedColumnNames: id
+            constraintName: categories_owner_id_fkey
+        - createIndex:
+            tableName: categories
+            indexName: idx_categories_owner
+            columns:
+              - column:
+                  name: owner_id
+  - changeSet:
+      id: 004-index-token-expiration
+      author: budget-planner
+      changes:
+        - createIndex:
+            tableName: user_access_tokens
+            indexName: idx_user_access_tokens_expires_at
+            columns:
+              - column:
+                  name: expires_at

@@ -2,6 +2,7 @@ package com.budgetplanner.common.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.*;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -15,6 +16,11 @@ public class GlobalExceptionHandler {
 		return ResponseEntity
 				.status(status)
 				.body(new ErrorResponse(Instant.now(), status.value(), message, request.getRequestURI()));
+	}
+
+	@ExceptionHandler(BadCredentialsException.class)
+	public ResponseEntity<ErrorResponse> invalidCredentials(BadCredentialsException exception, HttpServletRequest request) {
+		return error(HttpStatus.UNAUTHORIZED, exception.getMessage(), request);
 	}
 
 	@ExceptionHandler(ResourceNotFoundException.class)
