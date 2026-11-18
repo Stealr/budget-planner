@@ -65,7 +65,7 @@ public class MonthlyLimitService {
 
     private List<MonthlyLimitResponse> progress(Long ownerId, YearMonth month, Long categoryId) {
         LocalDate monthStart = startOf(month);
-        return limits.findProgress(ownerId, monthStart, monthStart.plusMonths(1), categoryId).stream()
+        return limits.findProgress(ownerId, monthStart, monthStart, categoryId).stream()
                 .map(row -> new MonthlyLimitResponse(row.getCategoryId(), row.getCategoryName(), month,
                         row.getLimitAmount(), row.getSpentAmount() == null ? ZERO_AMOUNT : row.getSpentAmount()))
                 .toList();
