@@ -13,6 +13,8 @@ export function apiErrorDetail(error: unknown) {
 }
 
 const conflicts: Record<string, string> = {
+  'Limits require an active expense category':
+    'Лимит можно задать только для активной категории расходов. Обновите категории или удалите лимит архивной категории.',
   'Standard categories cannot be changed': 'Стандартные категории нельзя изменять.',
   'Category is used by transactions and can only be archived':
     'У категории есть операции. Вместо удаления её можно архивировать.',
