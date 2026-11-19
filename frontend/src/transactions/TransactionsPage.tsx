@@ -1,112 +1,72 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Navigate, useLocation, useSearchParams } from 'react-router';
 import {
   Alert,
-  Box,
   Button,
   Card,
   CardContent,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  MenuItem,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
   TablePagination,
-  TableRow,
-  TextField,
   Typography,
 } from '@mui/material';
-import { Controller, useForm, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import dayjs from 'dayjs';
-import { useCreateTransactionMutation, useGetTransactionsQuery } from './api';
 import { useGetCategoriesQuery } from '../categories/api';
-
-const expenseSchema = z.object({
-  amount: z
-    .string()
-    .trim()
-    .regex(/^\d{1,9}(?:[,.]\d{1,2})?$/, 'Введите сумму в рублях с точностью до копейки')
-    .refine((value) => Number(value.replace(',', '.')) > 0, 'Введите сумму больше нуля'),
-  categoryId: z.string().regex(/^[1-9]\d*$/, 'Выберите категорию'),
-  transactionDate: z.iso.date({ error: 'Выберите дату' }),
-  description: z.string().trim().max(500, 'Максимум 500 символов'),
-});
-
-type ExpenseFields = z.input<typeof expenseSchema>;
-
-const money = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' });
-
-function saveError(error: unknown) {
-  if (error && typeof error === 'object' && 'status' in error) {
-    if (error.status === 404) return 'Категория больше недоступна. Выберите другую категорию.';
-    if (error.status === 409) return 'Расход не соответствует выбранной категории.';
-    if (error.status === 400) return 'Сервер отклонил данные. Проверьте сумму, дату и категорию.';
-  }
-  return 'Не удалось сохранить расход. Проверьте соединение и попробуйте снова.';
-}
+import { apiErrorMessage } from '../shared/apiError';
+import { formatDate, formatMoney } from '../shared/format';
+import ConfirmActionDialog from '../shared/ConfirmActionDialog';
+import {
+  transactionPageSize,
+  useDeleteTransactionMutation,
+  useGetTransactionsQuery,
+  type Transaction,
+} from './api';
+import { filtersSchema, filtersToQuery, readFilters, readPage, writeFilters } from './filters';
+import TransactionDialog from './TransactionDialog';
+import TransactionFilters from './TransactionFilters';
+import TransactionList from './TransactionList';
 
 export default function TransactionsPage() {
-  const [page, setPage] = useState(0);
-  const [open, setOpen] = useState(false);
-  const categories = useGetCategoriesQuery();
-  const transactions = useGetTransactionsQuery(page);
-  const [createTransaction, creation] = useCreateTransactionMutation();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<ExpenseFields>({
-    resolver: zodResolver(expenseSchema),
-    defaultValues: { amount: '', categoryId: '', transactionDate: '', description: '' },
-  });
-
-  const expenseCategories = categories.data?.filter((item) => item.type === 'EXPENSE') ?? [];
-  const categoryNames = new Map(categories.data?.map(({ id, name }) => [id, name]));
-  const categoryId = useWatch({ control, name: 'categoryId' });
-  const selectedCategoryExists = expenseCategories.some(({ id }) => String(id) === categoryId);
-
-  function openForm() {
-    creation.reset();
-    reset({
-      amount: '',
-      categoryId: '',
-      transactionDate: dayjs().format('YYYY-MM-DD'),
-      description: '',
-    });
-    setOpen(true);
+  const [params, setParams] = useSearchParams();
+  const location = useLocation();
+  const page = readPage(params);
+  const rawFilters = readFilters(params);
+  const filters = filtersSchema.safeParse(rawFilters);
+  const categories = useGetCategoriesQuery(true);
+  const transactions = useGetTransactionsQuery(
+    filters.success ? filtersToQuery(filters.data, page) : { page },
+    { skip: !filters.success },
+  );
+  const [editor, setEditor] = useState<{ transaction: Transaction | null } | null>(null);
+  const [deleting, setDeleting] = useState<Transaction | null>(null);
+  const [remove, removal] = useDeleteTransactionMutation();
+  const [notice, setNotice] = useState('');
+  const lastPage = Math.max(
+    0,
+    Math.ceil((transactions.currentData?.totalElements ?? 0) / transactionPageSize) - 1,
+  );
+  const correctingPage = filters.success && !!transactions.currentData && page > lastPage;
+  const correctedParams = new URLSearchParams(params);
+  if (lastPage) correctedParams.set('page', String(lastPage));
+  else correctedParams.delete('page');
+  const filtered = Object.values(rawFilters).some(Boolean);
+  function changePage(nextPage: number) {
+    const next = new URLSearchParams(params);
+    if (nextPage) next.set('page', String(nextPage));
+    else next.delete('page');
+    setParams(next);
   }
-
-  async function submit(values: ExpenseFields) {
+  async function confirmDelete() {
+    if (!deleting || removal.isLoading) return;
     try {
-      await createTransaction({
-        amount: Number(values.amount.replace(',', '.')),
-        categoryId: Number(values.categoryId),
-        transactionDate: values.transactionDate,
-        description: values.description,
-        type: 'EXPENSE',
-      }).unwrap();
-      setPage(0);
-      setOpen(false);
-    } catch (error) {
-      if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
-        void categories.refetch();
-      }
+      await remove(deleting.id).unwrap();
+      setDeleting(null);
+      setNotice('Операция удалена.');
+    } catch {
+      // The dialog retains the selected transaction and displays the API error.
     }
   }
-
   return (
-    <Stack spacing={3} sx={{ maxWidth: 960, mx: 'auto' }}>
+    <Stack spacing={3} sx={{ maxWidth: 1060, mx: 'auto' }}>
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={2}
@@ -115,179 +75,115 @@ export default function TransactionsPage() {
         <Typography component="h1" variant="h1">
           Операции
         </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-          <Button component={Link} to="/transactions/import" variant="outlined">
-            Импортировать выписку
-          </Button>
-          <Button variant="contained" onClick={openForm}>
-            Добавить расход
-          </Button>
-        </Stack>
+        <Button variant="contained" onClick={() => setEditor({ transaction: null })}>
+          Добавить операцию
+        </Button>
       </Stack>
+      {notice && (
+        <Alert severity="success" closeText="Закрыть" onClose={() => setNotice('')}>
+          {notice}
+        </Alert>
+      )}
+      <TransactionFilters
+        values={rawFilters}
+        categories={categories.currentData ?? []}
+        onApply={(fields) => setParams(writeFilters(params, fields))}
+      />
+      {!filters.success && (
+        <Alert severity="error">
+          Некорректные фильтры в адресе. Исправьте их или сбросьте фильтры.
+        </Alert>
+      )}
+      {categories.isError && (
+        <Alert
+          severity="error"
+          action={<Button onClick={() => void categories.refetch()}>Повторить</Button>}
+        >
+          Не удалось загрузить категории фильтра. История доступна по выбранным условиям.
+        </Alert>
+      )}
       {transactions.isError && (
         <Alert
           severity="error"
           action={<Button onClick={() => void transactions.refetch()}>Повторить</Button>}
         >
-          Не удалось загрузить операции.
+          {apiErrorMessage(transactions.error, 'Не удалось загрузить операции.')}
         </Alert>
       )}
-      {transactions.isFetching && !transactions.currentData && (
+      {filters.success && transactions.isFetching && (
         <CircularProgress aria-label="Загрузка операций" size={24} />
       )}
-      {transactions.currentData && (
-        <Card>
-          {transactions.currentData.content.length === 0 ? (
-            <CardContent>Операций пока нет. Добавьте первый расход.</CardContent>
+      {correctingPage && (
+        <Navigate
+          replace
+          to={{ pathname: location.pathname, search: `?${correctedParams}`, hash: location.hash }}
+        />
+      )}
+      {filters.success && transactions.currentData && !correctingPage && (
+        <Card aria-busy={transactions.isFetching}>
+          {transactions.currentData.content.length ? (
+            <TransactionList
+              transactions={transactions.currentData.content}
+              onEdit={(transaction) => setEditor({ transaction })}
+              onDelete={(transaction) => {
+                removal.reset();
+                setDeleting(transaction);
+              }}
+            />
           ) : (
-            <>
-              <TableContainer component={Box}>
-                <Table
-                  aria-label="История операций"
-                  sx={{
-                    '& .MuiTableCell-root': { px: { xs: 1, sm: 2 }, overflowWrap: 'anywhere' },
-                  }}
-                >
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Дата</TableCell>
-                      <TableCell>Категория</TableCell>
-                      <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                        Комментарий
-                      </TableCell>
-                      <TableCell align="right">Сумма</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {transactions.currentData.content.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{dayjs(item.transactionDate).format('DD.MM.YYYY')}</TableCell>
-                        <TableCell>
-                          {categoryNames.get(item.categoryId) ?? 'Категория #' + item.categoryId}
-                          {item.description && (
-                            <Typography
-                              variant="caption"
-                              sx={{ display: { xs: 'block', sm: 'none' } }}
-                            >
-                              {item.description}
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                          {item.description || '—'}
-                        </TableCell>
-                        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                          {money.format(item.type === 'EXPENSE' ? -item.amount : item.amount)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <TablePagination
-                component="div"
-                count={transactions.currentData.totalElements}
-                page={page}
-                rowsPerPage={20}
-                rowsPerPageOptions={[]}
-                labelDisplayedRows={({ from, to, count }) => `${from}–${to} из ${count}`}
-                getItemAriaLabel={(type) =>
-                  type === 'previous' ? 'Предыдущая страница' : 'Следующая страница'
-                }
-                onPageChange={(_, nextPage) => setPage(nextPage)}
-              />
-            </>
+            <CardContent>
+              {filtered
+                ? 'По выбранным фильтрам операций не найдено.'
+                : 'Операций пока нет. Добавьте первый доход или расход.'}
+            </CardContent>
+          )}
+          {transactions.currentData.totalElements > 0 && (
+            <TablePagination
+              component="div"
+              count={transactions.currentData.totalElements}
+              page={page}
+              rowsPerPage={transactionPageSize}
+              rowsPerPageOptions={[]}
+              labelDisplayedRows={({ from, to, count }) => `${from}–${to} из ${count}`}
+              getItemAriaLabel={(type) =>
+                type === 'previous' ? 'Предыдущая страница' : 'Следующая страница'
+              }
+              onPageChange={(_, next) => changePage(next)}
+            />
           )}
         </Card>
       )}
-      <Dialog
-        open={open}
-        onClose={() => {
-          if (!creation.isLoading) setOpen(false);
-        }}
-        fullWidth
-        maxWidth="xs"
-        aria-labelledby="expense-title"
-      >
-        <Box component="form" noValidate onSubmit={handleSubmit(submit)}>
-          <DialogTitle id="expense-title">Добавить расход</DialogTitle>
-          <DialogContent>
-            <Stack spacing={2} sx={{ pt: 1 }}>
-              {categories.isError && (
-                <Alert
-                  severity="error"
-                  action={<Button onClick={() => void categories.refetch()}>Повторить</Button>}
-                >
-                  Не удалось загрузить категории.
-                </Alert>
-              )}
-              {categories.isSuccess && expenseCategories.length === 0 && (
-                <Alert severity="info">Сначала добавьте категорию расхода.</Alert>
-              )}
-              {creation.isError && <Alert severity="error">{saveError(creation.error)}</Alert>}
-              <TextField
-                label="Сумма, ₽"
-                autoFocus
-                {...register('amount')}
-                error={!!errors.amount}
-                helperText={errors.amount?.message}
-                slotProps={{ htmlInput: { inputMode: 'decimal' } }}
-              />
-              <Controller
-                name="categoryId"
-                control={control}
-                render={({ field: { ref, ...field } }) => (
-                  <TextField
-                    {...field}
-                    inputRef={ref}
-                    select
-                    id="expense-category"
-                    label="Категория"
-                    value={selectedCategoryExists ? field.value : ''}
-                    disabled={categories.isFetching || expenseCategories.length === 0}
-                    error={!!errors.categoryId}
-                    helperText={errors.categoryId?.message}
-                  >
-                    {expenseCategories.map(({ id, name }) => (
-                      <MenuItem key={id} value={String(id)}>
-                        {name}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              />
-              <TextField
-                label="Дата"
-                type="date"
-                {...register('transactionDate')}
-                error={!!errors.transactionDate}
-                helperText={errors.transactionDate?.message}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
-              <TextField
-                label="Комментарий"
-                {...register('description')}
-                multiline
-                minRows={2}
-                error={!!errors.description}
-                helperText={errors.description?.message}
-              />
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpen(false)} disabled={creation.isLoading}>
-              Отмена
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={creation.isLoading || !selectedCategoryExists}
-            >
-              {creation.isLoading ? 'Сохранение…' : 'Сохранить'}
-            </Button>
-          </DialogActions>
-        </Box>
-      </Dialog>
+      {editor && (
+        <TransactionDialog
+          transaction={editor.transaction}
+          onClose={() => setEditor(null)}
+          onSaved={() => {
+            if (!editor.transaction) changePage(0);
+            setNotice(
+              editor.transaction
+                ? 'Операция сохранена.'
+                : 'Операция добавлена. В списке действуют выбранные фильтры.',
+            );
+            setEditor(null);
+          }}
+        />
+      )}
+      {deleting && (
+        <ConfirmActionDialog
+          title="Удалить операцию?"
+          label="Удалить"
+          destructive
+          busy={removal.isLoading}
+          description={`${formatDate(deleting.transactionDate)}, ${deleting.categoryName || `категория #${deleting.categoryId}`}, ${formatMoney(deleting.amount)}. Операция исчезнет из истории и отчётов.`}
+          error={
+            removal.isError
+              ? apiErrorMessage(removal.error, 'Не удалось удалить операцию. Попробуйте снова.')
+              : undefined
+          }
+          onClose={() => setDeleting(null)}
+          onConfirm={() => void confirmDelete()}
+        />
+      )}
     </Stack>
   );
 }
