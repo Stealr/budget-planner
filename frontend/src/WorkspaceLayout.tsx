@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import { closeMobileMenu, openMobileMenu } from './store/navigationSlice';
+import { sessionEnded } from './auth/authSlice';
 
 const sections = [
   { path: '/', label: 'Дашборд' },
@@ -77,8 +78,11 @@ export default function WorkspaceLayout() {
           >
             СтудБюджет
           </Typography>
-          <Button component={Link} to="/login" sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
-            Вход
+          <Button
+            onClick={() => dispatch(sessionEnded('logout'))}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+          >
+            Выйти
           </Button>
           <IconButton
             aria-label="Открыть меню"
@@ -97,8 +101,8 @@ export default function WorkspaceLayout() {
         slotProps={{ paper: { sx: { width: navigationWidth } } }}
       >
         <Navigation onNavigate={closeMenu} />
-        <Button component={Link} to="/login" onClick={closeMenu} sx={{ mx: 2 }}>
-          Вход
+        <Button onClick={() => dispatch(sessionEnded('logout'))} sx={{ mx: 2 }}>
+          Выйти
         </Button>
       </Drawer>
       <Box sx={{ display: 'flex', flex: 1 }}>
