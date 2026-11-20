@@ -8,6 +8,7 @@ import com.budgetplanner.category.repository.CategoryRepository;
 import com.budgetplanner.common.exception.BusinessConflictException;
 import com.budgetplanner.common.exception.ResourceNotFoundException;
 import com.budgetplanner.limit.repository.MonthlyLimitRepository;
+import com.budgetplanner.recurring.repository.RecurringPaymentRepository;
 import com.budgetplanner.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
     private final MonthlyLimitRepository monthlyLimits;
+    private final RecurringPaymentRepository recurringPayments;
 
     @Transactional
     public CategoryResponse create(Long ownerId, CategoryRequest request) {
@@ -55,6 +57,9 @@ public class CategoryService {
             if (monthlyLimits.existsByCategoryId(id)) {
                 throw new BusinessConflictException("Cannot change type of a category with monthly limits");
             }
+            if (recurringPayments.existsByCategoryId(id)) {
+                throw new BusinessConflictException("Cannot change type of a category used by recurring payments");
+            }
         }
 
         categoryMapper.update(category, request);
@@ -74,6 +79,9 @@ public class CategoryService {
         }
         if (monthlyLimits.existsByCategoryId(id)) {
             throw new BusinessConflictException("Category is used by monthly limits and can only be archived");
+        }
+        if (recurringPayments.existsByCategoryId(id)) {
+            throw new BusinessConflictException("Category is used by recurring payments and can only be archived");
         }
         categoryRepository.delete(category);
     }
