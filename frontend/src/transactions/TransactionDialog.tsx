@@ -40,7 +40,7 @@ export default function TransactionDialog({
 }: {
   transaction: Transaction | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (transaction: Transaction) => void;
 }) {
   const categories = useGetCategoriesQuery(true);
   const dispatch = useAppDispatch();
@@ -82,9 +82,10 @@ export default function TransactionDialog({
       categoryId: Number(values.categoryId),
     };
     try {
-      if (transaction) await update({ id: transaction.id, body }).unwrap();
-      else await create(body).unwrap();
-      onSaved();
+      const saved = transaction
+        ? await update({ id: transaction.id, body }).unwrap()
+        : await create(body).unwrap();
+      onSaved(saved);
     } catch (error) {
       const status = apiErrorStatus(error);
       if (status === 404 || status === 409) dispatch(api.util.invalidateTags(['Categories']));

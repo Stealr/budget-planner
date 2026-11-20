@@ -1,6 +1,7 @@
 import { api } from '../store/api';
 
 import type { CategoryType } from '../categories/api';
+import type { LimitWarning } from '../limits/types';
 
 export type TransactionInput = {
   amount: number;
@@ -8,16 +9,6 @@ export type TransactionInput = {
   categoryId: number;
   description: string;
   transactionDate: string;
-};
-
-export type LimitWarning = {
-  categoryId: number;
-  categoryName: string;
-  month: string;
-  limitAmount: number;
-  spentAmount: number;
-  usagePercent: number;
-  level: 'NEAR_LIMIT' | 'EXCEEDED';
 };
 
 export type Transaction = Omit<TransactionInput, 'description'> & {

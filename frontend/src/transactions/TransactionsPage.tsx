@@ -24,6 +24,8 @@ import { filtersSchema, filtersToQuery, readFilters, readPage, writeFilters } fr
 import TransactionDialog from './TransactionDialog';
 import TransactionFilters from './TransactionFilters';
 import TransactionList from './TransactionList';
+import LimitWarningAlert from '../limits/LimitWarningAlert';
+import type { LimitWarning } from '../limits/types';
 
 export default function TransactionsPage() {
   const [params, setParams] = useSearchParams();
@@ -40,6 +42,7 @@ export default function TransactionsPage() {
   const [deleting, setDeleting] = useState<Transaction | null>(null);
   const [remove, removal] = useDeleteTransactionMutation();
   const [notice, setNotice] = useState('');
+  const [warning, setWarning] = useState<LimitWarning | null>(null);
   const lastPage = Math.max(
     0,
     Math.ceil((transactions.currentData?.totalElements ?? 0) / transactionPageSize) - 1,
@@ -60,6 +63,7 @@ export default function TransactionsPage() {
     try {
       await remove(deleting.id).unwrap();
       setDeleting(null);
+      setWarning(null);
       setNotice('Операция удалена.');
     } catch {
       // The dialog retains the selected transaction and displays the API error.
@@ -84,6 +88,7 @@ export default function TransactionsPage() {
           {notice}
         </Alert>
       )}
+      {warning && <LimitWarningAlert warning={warning} onClose={() => setWarning(null)} />}
       <TransactionFilters
         values={rawFilters}
         categories={categories.currentData ?? []}
@@ -157,7 +162,10 @@ export default function TransactionsPage() {
         <TransactionDialog
           transaction={editor.transaction}
           onClose={() => setEditor(null)}
-          onSaved={() => {
+          onSaved={(saved) => {
+            setWarning(
+              !editor.transaction && saved.type === 'EXPENSE' ? (saved.limitWarning ?? null) : null,
+            );
             if (!editor.transaction) changePage(0);
             setNotice(
               editor.transaction

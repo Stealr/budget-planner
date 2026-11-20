@@ -7,6 +7,7 @@ import SessionLifecycle from './auth/SessionLifecycle';
 
 const CategoriesPage = lazy(() => import('./categories/CategoriesPage'));
 const TransactionsPage = lazy(() => import('./transactions/TransactionsPage'));
+const LimitsPage = lazy(() => import('./limits/LimitsPage'));
 const WorkspaceLayout = lazy(() => import('./WorkspaceLayout'));
 
 function SectionPage({
@@ -82,12 +83,7 @@ export default function App() {
               }
             />
             <Route path="categories" element={<CategoriesPage />} />
-            <Route
-              path="limits"
-              element={
-                <SectionPage title="Лимиты" description="Расходы по категориям за текущий месяц." />
-              }
-            />
+            <Route path="limits" element={<LimitsPage />} />
             <Route
               path="settings"
               element={
