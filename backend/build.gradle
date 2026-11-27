@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'jacoco'
     id 'org.springframework.boot' version '3.5.7'
     id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -20,4 +21,52 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.zonky.test:embedded-postgres:2.1.0'
+    testImplementation enforcedPlatform('io.zonky.test.postgres:embedded-postgres-binaries-bom:16.16.0')
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    def testTemp = layout.buildDirectory.dir('test-tmp')
+    doFirst { testTemp.get().asFile.mkdirs() }
+    systemProperty 'java.io.tmpdir', testTemp.get().asFile.absolutePath
+    finalizedBy jacocoTestReport
+}
+
+jacoco {
+    toolVersion = '0.8.13'
+}
+
+def businessClasses = {
+    fileTree(layout.buildDirectory.dir('classes/java/main')) {
+        include '**/service/**', '**/auth/util/**'
+    }
+}
+
+jacocoTestReport {
+    dependsOn test
+    classDirectories.setFrom(businessClasses())
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn test
+    classDirectories.setFrom(businessClasses())
+    violationRules {
+        rule {
+            limit {
+                counter = 'LINE'
+                minimum = 0.70
+            }
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn jacocoTestCoverageVerification
 }
