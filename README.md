@@ -49,6 +49,21 @@ npm run build
 npm test
 ```
 
+Для двух сквозных тестов Playwright нужны Chromium и локальное приложение с API и PostgreSQL.
+Из корня репозитория запустите отдельный проект Docker Compose. Тесты регистрируют в его БД новые
+учётные записи.
+
+```powershell
+npm exec --workspace frontend -- playwright install chromium
+$env:APP_PORT = '18080'
+docker compose -p studbudget-e2e up -d --build --wait
+npm run test:e2e
+docker compose -p studbudget-e2e down
+```
+
+Playwright проверяет превышение месячного лимита и сохранение истории операций при архивации
+категории. При сбое трассировка сохраняется в `frontend/test-results/`.
+
 Команда `npm run format` исправляет форматирование файлов, которые не исключены в `.prettierignore`. Три документа ПР1 пока исключены из автоформатирования, чтобы их первая версия оставалась точной копией исходных материалов.
 
 ## Документация, версия 1
